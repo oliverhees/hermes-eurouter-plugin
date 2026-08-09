@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-AGPL--3.0%20%2B%20Kommerziell-red" alt="Lizenz" /></a>
-  <img src="https://img.shields.io/badge/Selfhosted-Coolify--ready-red" alt="Coolify ready" />
+  <img src="https://img.shields.io/badge/Nur%20f%C3%BCr-Hermes%20Desktop-red" alt="Nur für Hermes" />
   <img src="https://img.shields.io/badge/DSGVO-konform-red" alt="DSGVO" />
   <a href="https://aiianer.de"><img src="https://img.shields.io/badge/Community-AIIANER-black" alt="AIIANER Community" /></a>
 </p>
@@ -19,10 +19,11 @@
 
 Das Plugin bindet [EU Router](https://www.eurouter.ai?ref=06ZUHPBK) als Provider in Hermes ein und zeigt im Modell-Picker deine konfigurierten **Routing Rules** ("EU Compliance", …) statt der 130+ rohen Katalog-Modelle, von denen die meisten ohne passende Regel sowieso mit einem Fehler enden. Es ist für alle, die ihre KI-Anfragen DSGVO-konform über EU-Infrastruktur routen wollen, ohne bei jedem Chat an Modell-IDs zu denken. Und es ist update-sicher gebaut: Es lebt am offiziellen User-Plugin-Ort außerhalb des Hermes-Checkouts und überlebt die täglichen Hermes-Updates.
 
-**Teil des AIIANER-Ökosystems:** Das EU-Router-Plugin ist eine Erweiterung für
-[Hermes](https://aiianer.de), das modellagnostische, DSGVO-konforme
-KI-Betriebssystem. Jedes Open-Source-Tool ist eine Erweiterung für dein
-KI-Betriebssystem.
+**Teil des AIIANER-Ökosystems:** Bei [AIIANER](https://aiianer.de) bauen wir
+ein KI-Betriebssystem, das [Hermes Desktop](https://github.com/NousResearch/hermes-agent)
+als Grundlage nutzt. Hermes selbst ist ein Open-Source-Projekt von
+**Nous Research** — dieses Plugin ist eine unabhängige Community-Erweiterung
+dafür und steht in keiner offiziellen Verbindung zu Nous Research.
 
 ## Features
 
@@ -82,7 +83,7 @@ Optional, für maximale Robustheit (Self-Heal + Healthcheck nach jedem Hermes-Up
 
 ## Deployment
 
-Läuft überall dort, wo Hermes läuft. Empfohlener Weg für dein Hermes-Setup: **Coolify** auf einem kleinen Linux-VPS.
+Das Plugin läuft überall dort, wo Hermes Desktop oder die Hermes-CLI läuft — es wird direkt in deine lokale Hermes-Installation kopiert, ein eigener Server ist nicht nötig.
 
 | Pfad | Wann nehmen | Doc |
 | --- | --- | --- |
@@ -144,12 +145,16 @@ Verantwortungsvolle Meldung: siehe [SECURITY.md](SECURITY.md).
 
 ## Marken
 
-„AIIANER", „Hermes", „Lokyy", „Lokyy Brain", „Datenschleuse" und „Sichtradar"
+„AIIANER", „Lokyy", „Lokyy Brain", „Datenschleuse" und „Sichtradar"
 sind Kennzeichen von Oliver Hees aka Aiianer. Die Lizenz des Quellcodes gewährt
 **keine** Rechte an diesen Namen oder Logos. Forks müssen unter eigenem Namen
-auftreten. „EU Router" / eurouter.ai ist ein Angebot des jeweiligen Betreibers;
-dieses Plugin ist ein unabhängiges Community-Projekt und steht in keiner
-offiziellen Verbindung zu eurouter.ai.
+auftreten.
+
+„Hermes" ist ein Open-Source-Projekt von **Nous Research**
+([github.com/NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent)).
+„EU Router" / eurouter.ai ist ein Angebot des jeweiligen Betreibers.
+Dieses Plugin ist ein unabhängiges Community-Projekt und steht in keiner
+offiziellen Verbindung zu Nous Research oder eurouter.ai.
 
 ---
 
