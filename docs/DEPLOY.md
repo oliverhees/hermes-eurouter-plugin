@@ -13,7 +13,7 @@ komplett neu starten. Der Provider "EU Router" erscheint im Modell-Picker,
 darunter deine Routing Rules beim Namen.
 
 Voraussetzung: mindestens eine aktivierte Routing Rule in deinem
-EU-Router-Account (https://www.eurouter.ai?ref=06ZUHPBK → Routing Rules). Ohne Regeln
+EU-Router-Account ([https://eurouter.ai](https://www.eurouter.ai?ref=06ZUHPBK) → Routing Rules). Ohne Regeln
 zeigt der Picker ersatzweise den generischen Modellkatalog.
 
 ## Updates

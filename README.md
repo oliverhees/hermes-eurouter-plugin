@@ -67,13 +67,15 @@ cd hermes-eurouter-plugin
 #    und leert den Modell-Listen-Cache)
 ./install.sh
 
-# 3. EU-Router-API-Key hinterlegen (https://www.eurouter.ai?ref=06ZUHPBK → API Keys)
+# 3. EU-Router-API-Key hinterlegen (Link zum Account: siehe unter dem Block)
 #    in ~/.hermes/.env eintragen:
 #    EUROUTER_API_KEY=eur_dein_key
 
 # 4. Hermes komplett neu starten — fertig.
 #    Der Provider "EU Router" erscheint im Modell-Picker mit deinen Routen.
 ```
+
+👉 Account & API-Key gibt es bei [https://eurouter.ai](https://www.eurouter.ai?ref=06ZUHPBK) (→ API Keys).
 
 Optional, für maximale Robustheit (Self-Heal + Healthcheck nach jedem Hermes-Update):
 
