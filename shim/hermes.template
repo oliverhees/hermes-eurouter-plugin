@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# hermes-eurouter-plugin shim — installiert von install.sh --with-shim
+# (Template: @@REPO_DIR@@ wird bei der Installation durch den Repo-Pfad ersetzt.)
+unset PYTHONPATH
+unset PYTHONHOME
+
+# ---------------------------------------------------------------------------
+# Zwei Jobs vor dem Start der echten hermes-Binary:
+#
+# 1. SELF-HEAL: gleicht ~/.hermes/plugins/model-providers/ gegen das
+#    Plugin-Repo ab und stellt fehlende/veraltete Dateien wieder her
+#    (cmp+cp, kein Git, kein Netzwerk, kein spürbarer Delay).
+#
+# 2. POST-UPDATE-HEALTHCHECK: Dateien vorhanden heißt nicht funktionsfähig —
+#    ein Hermes-Update kann interne APIs ändern. Wenn sich der Stand der
+#    Hermes-Installation geändert hat, läuft ein echter Endzustand-Probelauf
+#    (Provider-Profil UND Switch-Identity registriert?). Bei Bruch: laute
+#    Warnung auf stderr + Desktop-Notification + Eintrag in
+#    ~/.hermes/logs/eurouter-plugin.log. Läuft nur einmal pro Update
+#    (Stamp-Datei), normale Starts bleiben bei wenigen Millisekunden.
+#
+# Keiner der beiden Jobs blockiert jemals den Start.
+# ---------------------------------------------------------------------------
+PLUGINS_BACKUP="@@REPO_DIR@@/model-providers"
+HERMES_HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
+PLUGINS_LIVE="$HERMES_HOME_DIR/plugins/model-providers"
+HERMES_AGENT_DIR="$HERMES_HOME_DIR/hermes-agent"
+HERMES_REAL_BIN="$HERMES_AGENT_DIR/venv/bin/hermes"
+PLUGIN_LOG="$HERMES_HOME_DIR/logs/eurouter-plugin.log"
+HEALTH_STAMP="$HERMES_HOME_DIR/logs/eurouter-plugin.lastcheck"
+
+# --- 1. Self-Heal ---------------------------------------------------------
+if [ -d "$PLUGINS_BACKUP" ]; then
+  mkdir -p "$PLUGINS_LIVE" 2>/dev/null
+  for src_dir in "$PLUGINS_BACKUP"/*/; do
+    [ -d "$src_dir" ] || continue
+    name="$(basename "$src_dir")"
+    dst_dir="$PLUGINS_LIVE/$name"
+    needs_sync=0
+    for f in __init__.py plugin.yaml; do
+      if ! cmp -s "$src_dir$f" "$dst_dir/$f" 2>/dev/null; then
+        needs_sync=1
+        break
+      fi
+    done
+    if [ "$needs_sync" -eq 1 ]; then
+      mkdir -p "$dst_dir" 2>/dev/null
+      cp "$src_dir"__init__.py "$dst_dir/__init__.py" 2>/dev/null
+      cp "$src_dir"plugin.yaml "$dst_dir/plugin.yaml" 2>/dev/null
+      rm -rf "$dst_dir/__pycache__" 2>/dev/null
+      echo "[hermes] self-heal: Plugin '$name' wiederhergestellt (fehlte oder war veraltet)" >&2
+      rm -f "$HEALTH_STAMP" 2>/dev/null
+    fi
+  done
+fi
+
+# --- 2. Post-Update-Endzustand-Healthcheck --------------------------------
+if [ -x "$HERMES_AGENT_DIR/venv/bin/python" ]; then
+  head="$(git -C "$HERMES_AGENT_DIR" rev-parse HEAD 2>/dev/null || echo unknown)"
+  venv_stamp="$(stat -c %Y "$HERMES_REAL_BIN" 2>/dev/null || echo 0)"
+  current_state="${head}-${venv_stamp}"
+  last_state="$(cat "$HEALTH_STAMP" 2>/dev/null || echo none)"
+  if [ "$current_state" != "$last_state" ]; then
+    if (cd "$HERMES_AGENT_DIR" && ./venv/bin/python - <<'PYEOF'
+import sys
+try:
+    import providers
+    profile_ok = providers.get_provider_profile("eurouter") is not None
+    identity_ok = False
+    label = None
+    try:
+        from hermes_cli.providers import get_provider, get_label
+        identity_ok = get_provider("eurouter") is not None
+        label = get_label("eurouter")
+    except Exception as exc:
+        print(f"identity resolution unavailable: {exc}", file=sys.stderr)
+    if label != "EU Router":
+        print(f"soft: label is {label!r}, expected 'EU Router'", file=sys.stderr)
+    ok = profile_ok and identity_ok
+    if not ok:
+        print(f"end-state check failed: profile={profile_ok} identity={identity_ok}", file=sys.stderr)
+except Exception as exc:
+    print(f"probe crashed: {exc}", file=sys.stderr)
+    ok = False
+sys.exit(0 if ok else 1)
+PYEOF
+    ) >/dev/null 2>&1; then
+      mkdir -p "$(dirname "$HEALTH_STAMP")" 2>/dev/null
+      printf '%s' "$current_state" > "$HEALTH_STAMP" 2>/dev/null
+    else
+      mkdir -p "$(dirname "$PLUGIN_LOG")" 2>/dev/null
+      echo "$(date -Iseconds) HEALTH CHECK FAILED after update to $current_state — eurouter provider/identity not resolvable; see this log's preceding lines for the exact broken integration" >> "$PLUGIN_LOG" 2>/dev/null
+      echo "[hermes] WARNUNG: EU-Router-Plugin registriert sich nach dem Hermes-Update nicht mehr — Details: $PLUGIN_LOG" >&2
+      command -v notify-send >/dev/null 2>&1 && notify-send -u critical "Hermes EU-Router" "Plugin nach Hermes-Update kaputt — Details: $PLUGIN_LOG" 2>/dev/null
+      # Kein Stamp-Write → Warnung wiederholt sich bei jedem Start bis zum
+      # Fix. Absichtlich: stille Einmal-Warnungen gehen unter.
+    fi
+  fi
+fi
+
+exec "$HERMES_REAL_BIN" "$@"

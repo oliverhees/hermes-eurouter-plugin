@@ -1,0 +1,16 @@
+name: eurouter-provider
+kind: model-provider
+version: 2.1.0
+description: EU Router aggregator — EU-hosted, GDPR-compliant model routing, with Routing-Rules-as-picker-entries (drift-hardened)
+author: Oliver
+
+# Lives at $HERMES_HOME/plugins/model-providers/ (a USER plugin) rather than
+# in the hermes-agent repo's bundled plugins/model-providers/ on purpose:
+# Hermes' own auto-updater does a git-clean-style update on its repo
+# checkout and silently discards uncommitted local edits to tracked files —
+# confirmed live, 2026-08-07, this exact plugin got wiped this way at least
+# twice during one work session. This directory is OUTSIDE that git repo,
+# so it is immune. User plugins override bundled plugins of the same name
+# (providers/__init__.py: "last-writer-wins" in register_provider()), so
+# this also survives Hermes ever shipping its own official "eurouter"
+# plugin later.
