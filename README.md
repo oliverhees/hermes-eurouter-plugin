@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="Hermes EU-Router-Plugin Logo" width="320" />
+  <img src="assets/logo.png" alt="Hermes EU-Router-Plugin Logo" width="640" />
 </p>
 
 <h1 align="center">Hermes EU-Router-Plugin</h1>
@@ -10,14 +10,14 @@
   <a href="#lizenz"><img src="https://img.shields.io/badge/Lizenz-AGPL--3.0%20%2B%20Kommerziell-red" alt="Lizenz" /></a>
   <img src="https://img.shields.io/badge/Selfhosted-Coolify--ready-red" alt="Coolify ready" />
   <img src="https://img.shields.io/badge/DSGVO-konform-red" alt="DSGVO" />
-  <a href="https://community.aiianer.de"><img src="https://img.shields.io/badge/Community-AIIANER-black" alt="AIIANER Community" /></a>
+  <a href="https://aiianer.de"><img src="https://img.shields.io/badge/Community-AIIANER-black" alt="AIIANER Community" /></a>
 </p>
 
 ---
 
 ## Was ist das Hermes EU-Router-Plugin?
 
-Das Plugin bindet [EU Router](https://www.eurouter.ai/) als Provider in Hermes ein und zeigt im Modell-Picker deine konfigurierten **Routing Rules** ("EU Compliance", …) statt der 130+ rohen Katalog-Modelle, von denen die meisten ohne passende Regel sowieso mit einem Fehler enden. Es ist für alle, die ihre KI-Anfragen DSGVO-konform über EU-Infrastruktur routen wollen, ohne bei jedem Chat an Modell-IDs zu denken. Und es ist update-sicher gebaut: Es lebt am offiziellen User-Plugin-Ort außerhalb des Hermes-Checkouts und überlebt die täglichen Hermes-Updates.
+Das Plugin bindet [EU Router](https://www.eurouter.ai?ref=06ZUHPBK) als Provider in Hermes ein und zeigt im Modell-Picker deine konfigurierten **Routing Rules** ("EU Compliance", …) statt der 130+ rohen Katalog-Modelle, von denen die meisten ohne passende Regel sowieso mit einem Fehler enden. Es ist für alle, die ihre KI-Anfragen DSGVO-konform über EU-Infrastruktur routen wollen, ohne bei jedem Chat an Modell-IDs zu denken. Und es ist update-sicher gebaut: Es lebt am offiziellen User-Plugin-Ort außerhalb des Hermes-Checkouts und überlebt die täglichen Hermes-Updates.
 
 **Teil des AIIANER-Ökosystems:** Das EU-Router-Plugin ist eine Erweiterung für
 [Hermes](https://aiianer.de), das modellagnostische, DSGVO-konforme
@@ -66,7 +66,7 @@ cd hermes-eurouter-plugin
 #    und leert den Modell-Listen-Cache)
 ./install.sh
 
-# 3. EU-Router-API-Key hinterlegen (https://www.eurouter.ai/ → API Keys)
+# 3. EU-Router-API-Key hinterlegen (https://www.eurouter.ai?ref=06ZUHPBK → API Keys)
 #    in ~/.hermes/.env eintragen:
 #    EUROUTER_API_KEY=eur_dein_key
 
@@ -89,13 +89,13 @@ Läuft überall dort, wo Hermes läuft. Empfohlener Weg für dein Hermes-Setup: 
 | **install.sh** | Standard: lokale Hermes-Desktop- oder CLI-Installation | [docs/DEPLOY.md](docs/DEPLOY.md) |
 
 > 🎓 **Schritt-für-Schritt-Tutorials, Setups und Support** gibt es exklusiv in der
-> [AIIANER Community](https://community.aiianer.de) — inklusive KI-Coach, der
+> [AIIANER Community](https://aiianer.de) — inklusive KI-Coach, der
 > deine Fragen zu diesem Tool direkt beantwortet.
 
 > 🛠️ **Du willst es nicht selbst aufsetzen?** Wir übernehmen das für dich:
 > Server aufsetzen, Installation, Konfiguration — komplett einsatzbereit,
 > auf Wunsch mit Wartungs- & Supportvertrag. Anfrage an **support@aiianer.de**
-> oder direkt in der [AIIANER Community](https://community.aiianer.de).
+> oder direkt in der [AIIANER Community](https://aiianer.de).
 
 ## Status
 
@@ -114,7 +114,7 @@ Offen: Der Healthcheck-Shim greift nur bei Starts über den `hermes`-Befehl im T
 
 | | |
 | --- | --- |
-| 🏠 **Community** | [community.aiianer.de](https://community.aiianer.de) — Kurse, Labs, Tutorials, KI-Coaches |
+| 🏠 **Community** | [aiianer.de](https://aiianer.de) — Kurse, Labs, Tutorials, KI-Coaches |
 | 📺 **YouTube** | [youtube.com/@aiianer](https://www.youtube.com/@aiianer) — Tools, Tests, Deep-Dives |
 | 🧠 **Lokyy Brain** | [github.com/oliverhees/lokyy-brain](https://github.com/oliverhees/lokyy-brain) — dein Second Brain, selbst gehostet |
 | 🔒 **Datenschleuse** | DSGVO-Filter für deine KI — Tutorials in der Community |
@@ -131,7 +131,7 @@ Das Hermes EU-Router-Plugin ist **dual lizenziert**:
 2. **Kommerzielle Lizenz** — wer das Plugin in geschlossenen, kommerziellen
    Produkten oder Diensten einsetzen will, ohne eigenen Quellcode offenzulegen,
    benötigt eine kommerzielle Lizenz. Details in [LICENSING.md](LICENSING.md),
-   Anfragen über die [AIIANER Community](https://community.aiianer.de) oder
+   Anfragen über die [AIIANER Community](https://aiianer.de) oder
    **support@aiianer.de**.
 
 **Wartung, Support & Anpassungen** gibt es als Vertrag direkt vom Entwickler —

@@ -23,7 +23,7 @@ ohne deinen Quellcode offenzulegen? Dann brauchst du eine kommerzielle Lizenz.
 Typische Nutzer dieser Option: Agenturen, SaaS-Anbieter, Unternehmen, die
 das Hermes EU-Router-Plugin in eigene Angebote einbauen.
 
-**Anfrage:** über die [AIIANER Community](https://community.aiianer.de)
+**Anfrage:** über die [AIIANER Community](https://aiianer.de)
 oder per E-Mail an **support@aiianer.de** — kurz beschreiben, was du vorhast,
 und du bekommst ein faires Angebot.
 
@@ -36,7 +36,7 @@ Entwickler. Und wer das Hermes EU-Router-Plugin nicht selbst aufsetzen kann oder
 Konfiguration, einsatzbereit übergeben.
 
 Anfrage an **support@aiianer.de** oder über die
-[AIIANER Community](https://community.aiianer.de). Kostenloser
+[AIIANER Community](https://aiianer.de). Kostenloser
 Community-Support (Fragen, Tutorials, KI-Coach) ist für Mitglieder inklusive.
 
 ## Häufige Fragen

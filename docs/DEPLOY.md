@@ -13,7 +13,7 @@ komplett neu starten. Der Provider "EU Router" erscheint im Modell-Picker,
 darunter deine Routing Rules beim Namen.
 
 Voraussetzung: mindestens eine aktivierte Routing Rule in deinem
-EU-Router-Account (https://www.eurouter.ai/ → Routing Rules). Ohne Regeln
+EU-Router-Account (https://www.eurouter.ai?ref=06ZUHPBK → Routing Rules). Ohne Regeln
 zeigt der Picker ersatzweise den generischen Modellkatalog.
 
 ## Updates
@@ -59,5 +59,5 @@ läuft er nicht — das Plugin selbst funktioniert davon unabhängig.
 
 Alle Degradationen schreibt das Plugin mit Zeitstempel und exakter Ursache
 nach `~/.hermes/logs/eurouter-plugin.log`. Bitte diese Zeilen bei
-Support-Anfragen in der [AIIANER Community](https://community.aiianer.de)
+Support-Anfragen in der [AIIANER Community](https://aiianer.de)
 mitschicken.

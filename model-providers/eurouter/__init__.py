@@ -402,7 +402,10 @@ _PROFILE_KWARGS: dict[str, Any] = {
     "env_vars": ("EUROUTER_API_KEY",),
     "display_name": "EU Router",
     "description": "EUrouter — EU-hosted, GDPR-compliant model routing",
-    "signup_url": "https://www.eurouter.ai/",
+    # Affiliate-Ref: user-facing signup link shown in Hermes' provider setup
+    # UI — every marketing link to eurouter.ai carries Oliver's ref code
+    # (API endpoints stay clean, they are functional URLs, not links).
+    "signup_url": "https://www.eurouter.ai?ref=06ZUHPBK",
     "base_url": _EUROUTER_BASE_URL,
     "models_url": f"{_EUROUTER_BASE_URL}/models",
     # Deliberately EMPTY: hermes_cli/models.py's live-fetch caller MERGES
