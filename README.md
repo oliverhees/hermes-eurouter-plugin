@@ -58,7 +58,20 @@ dafür und steht in keiner offiziellen Verbindung zu Nous Research.
 
 ## Setup
 
-Ein Befehl, kein git nötig:
+### Der einfachste Weg: Sag es einfach deinem Hermes 🤖
+
+Hermes ist ein Agent mit Terminal-Zugriff — er kann das Plugin selbst
+installieren. Kopiere diese Nachricht in deinen Hermes-Chat, bestätige die
+Befehls-Ausführung, fertig:
+
+> Installiere bitte das EU-Router-Plugin für mich. Führe dazu diesen Befehl aus:
+> `curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash`
+> Prüfe danach, ob unter `~/.hermes/plugins/model-providers/eurouter/` die Dateien
+> `__init__.py` und `plugin.yaml` liegen, und sag mir, ob alles geklappt hat.
+> Erinnere mich zum Schluss daran, meinen EUROUTER_API_KEY in `~/.hermes/.env`
+> einzutragen und Hermes komplett neu zu starten.
+
+### Oder selbst im Terminal — ein Befehl, kein git nötig:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash

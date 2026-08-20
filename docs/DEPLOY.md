@@ -2,7 +2,10 @@
 
 ## Standard-Installation (Hermes Desktop oder CLI, lokal)
 
-Ein Befehl, kein git nötig:
+**Der einfachste Weg:** Sag es deinem Hermes im Chat — er installiert selbst
+(fertiger Copy-Paste-Prompt im [README](../README.md#setup), Abschnitt Setup).
+
+Oder selbst im Terminal, ein Befehl, kein git nötig:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash
