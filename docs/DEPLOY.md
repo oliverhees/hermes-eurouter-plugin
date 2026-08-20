@@ -2,11 +2,24 @@
 
 ## Standard-Installation (Hermes Desktop oder CLI, lokal)
 
+Ein Befehl, kein git nötig:
+
+```bash
+curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash
+```
+
+Oder klassisch per Clone (praktisch für Updates via `git pull`):
+
 ```bash
 git clone https://github.com/oliverhees/hermes-eurouter-plugin.git
 cd hermes-eurouter-plugin
 ./install.sh
 ```
+
+Hinweis für Fortgeschrittene: `hermes plugins install` (der offizielle
+Plugin-Befehl) legt Model-Provider-Plugins aktuell an einen Ort, den Hermes'
+Provider-Discovery nicht scannt — deshalb dieser Installer. Sobald Upstream
+das unterstützt, stellen wir um.
 
 Danach `EUROUTER_API_KEY=eur_...` in `~/.hermes/.env` eintragen und Hermes
 komplett neu starten. Der Provider "EU Router" erscheint im Modell-Picker,

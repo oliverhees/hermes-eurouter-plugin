@@ -9,9 +9,32 @@
 #   git pull && ./install.sh
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" 2>/dev/null && pwd)"
 HERMES_HOME_DIR="${HERMES_HOME:-$HOME/.hermes}"
 PLUGINS_LIVE="$HERMES_HOME_DIR/plugins/model-providers"
+
+# --- Remote-Bootstrap: laeuft das Skript ausserhalb eines Repo-Clones ------
+# (z. B. via `curl -sL .../install.sh | bash`), laedt es sich das Repo als
+# Tarball in ein Temp-Verzeichnis und fuehrt das dortige install.sh aus.
+# So reicht fuer die Community EIN Befehl, ganz ohne git.
+if [ ! -f "$REPO_DIR/model-providers/eurouter/__init__.py" ]; then
+  echo "Kein lokaler Repo-Clone gefunden - lade das Plugin von GitHub ..."
+  TMP_DIR="$(mktemp -d)"
+  trap 'rm -rf "$TMP_DIR"' EXIT
+  TARBALL_URL="https://github.com/oliverhees/hermes-eurouter-plugin/archive/refs/heads/main.tar.gz"
+  if command -v curl >/dev/null 2>&1; then
+    curl -sL "$TARBALL_URL" | tar -xz -C "$TMP_DIR"
+  else
+    wget -qO- "$TARBALL_URL" | tar -xz -C "$TMP_DIR"
+  fi
+  INNER="$(find "$TMP_DIR" -maxdepth 2 -name install.sh | head -1)"
+  if [ -z "$INNER" ]; then
+    echo "FEHLER: Download fehlgeschlagen." >&2
+    exit 1
+  fi
+  chmod +x "$INNER"
+  exec bash "$INNER" "$@"
+fi
 
 if [ ! -d "$HERMES_HOME_DIR" ]; then
   echo "FEHLER: $HERMES_HOME_DIR existiert nicht. Ist Hermes installiert?" >&2

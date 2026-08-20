@@ -58,21 +58,28 @@ dafür und steht in keiner offiziellen Verbindung zu Nous Research.
 
 ## Setup
 
+Ein Befehl, kein git nötig:
+
 ```bash
-# 1. Repo klonen
-git clone https://github.com/oliverhees/hermes-eurouter-plugin.git
-cd hermes-eurouter-plugin
+curl -sL https://raw.githubusercontent.com/oliverhees/hermes-eurouter-plugin/main/install.sh | bash
+```
 
-# 2. Plugin installieren (kopiert nach ~/.hermes/plugins/model-providers/
-#    und leert den Modell-Listen-Cache)
-./install.sh
+Danach nur noch:
 
-# 3. EU-Router-API-Key hinterlegen (Link zum Account: siehe unter dem Block)
+```bash
+# 1. EU-Router-API-Key hinterlegen (Link zum Account: siehe unter dem Block)
 #    in ~/.hermes/.env eintragen:
 #    EUROUTER_API_KEY=eur_dein_key
 
-# 4. Hermes komplett neu starten — fertig.
+# 2. Hermes komplett neu starten — fertig.
 #    Der Provider "EU Router" erscheint im Modell-Picker mit deinen Routen.
+```
+
+Alternativ klassisch per Clone (praktisch, wenn du Updates per `git pull` ziehen willst):
+
+```bash
+git clone https://github.com/oliverhees/hermes-eurouter-plugin.git
+cd hermes-eurouter-plugin && ./install.sh
 ```
 
 👉 Account & API-Key gibt es bei [https://eurouter.ai](https://www.eurouter.ai?ref=06ZUHPBK) (→ API Keys).
