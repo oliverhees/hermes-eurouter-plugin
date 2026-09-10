@@ -274,9 +274,8 @@ class EuRouterProfile(ProviderProfile):
         **context: Any,
     ) -> list[str] | None:
         """Restrict the picker to the account's routing rules, BY NAME.
-        Falls back to the generic ``/v1/models`` catalog when the account
-        has no enabled rules yet; falls back to the last good route list
-        when everything fails."""
+        Never expose the generic catalog: models without a matching Routing
+        Rule are not valid choices for this provider."""
         try:
             key = api_key or os.environ.get("EUROUTER_API_KEY", "")
             if key:
@@ -296,9 +295,10 @@ class EuRouterProfile(ProviderProfile):
                         _sync_provider_models_catalog(names)
                         _last_good_route_names[:] = names
                         return names
-            generic = super().fetch_models(api_key=api_key, base_url=base_url, timeout=timeout)
-            if generic:
-                return generic
+            # No valid Routing Rules: keep the picker fail-closed. The
+            # generic model catalog contains models that this account may not
+            # call and must never be presented as EUrouter routes.
+            return list(_last_good_route_names) or None
         except Exception as exc:
             _log_issue(f"fetch_models failed unexpectedly ({type(exc).__name__}: {exc}); serving last good route list")
         return list(_last_good_route_names) or None
