@@ -71,9 +71,15 @@ Routen auf 1M-Kontext-Upstreams endet das mit HTTP 400 "Estimated total
 tokens (…) exceeds model context window". Das Plugin setzt deshalb bei
 jedem Request ein Limit: einen vom Aufrufer gesetzten Wert (z.B. 4096 des
 Goal-Judges, `model.max_tokens`, `auxiliary.<task>.max_tokens`), sonst
-den Default 65536. Überschreiben per `EUROUTER_MAX_TOKENS=<zahl>` in
+den Default 32768. Überschreiben per `EUROUTER_MAX_TOKENS=<zahl>` in
 `~/.hermes/.env` (bzw. der `.env` des Profils); `EUROUTER_MAX_TOKENS=off`
 schaltet das Plugin-Limit ab.
+
+Einzelne Upstreams hinter einer Route haben niedrigere Output-Limits
+(beobachtet: 64000, 16000). Meldet EU Router "max_tokens (X) exceeds model
+limit (Y)", merkt sich das Plugin Y pro Modell, lässt Hermes den Request
+wiederholen und begrenzt ab dann auf Y. Gespeichert in
+`~/.hermes/cache/eurouter-output-limits.json` — Datei löschen setzt das zurück.
 
 ## Troubleshooting
 
