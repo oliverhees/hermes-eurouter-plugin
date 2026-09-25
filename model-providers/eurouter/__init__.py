@@ -106,6 +106,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import inspect
 import json
 import logging
 import os
@@ -254,6 +255,81 @@ def _sync_provider_models_catalog(names: list[str]) -> None:
 _last_good_route_names: list[str] = []
 
 
+# ---------------------------------------------------------------------------
+# Output-token cap (Live-Befund 2026-09-25, Kanban t_fd3b89f0)
+# ---------------------------------------------------------------------------
+# A request WITHOUT max_tokens makes EU Router budget the model's full
+# max_completion_tokens as output. For routes landing on a 1M-window upstream
+# (deepseek-v4-flash-0731 advertises max_completion_tokens == context_length)
+# every such request 400s, even a 12-token prompt:
+#   "Estimated total tokens (1048589) exceeds model context window (1048576).
+#    Reduce message length or max_tokens."
+# Hermes omits max_tokens on this provider in two places:
+#   1. Main agent loop: sends the caller/config value, else the profile's
+#      get_max_tokens() — official hook, overridden below.
+#   2. Auxiliary calls (goal judge, titles, compression, ...):
+#      agent/auxiliary_client.py::_forwards_max_tokens() is a hard-coded
+#      provider allow-list without eurouter, so even an explicit value (the
+#      goal judge's 4096) is dropped. The only plugin surface on that path is
+#      build_api_kwargs_extras()'s top_level dict (merged AFTER that check),
+#      which is not handed the caller's value — _aux_caller_max_tokens()
+#      recovers it read-only from the calling frame (private internal,
+#      fail-soft: default cap when it can't be found).
+# Override with EUROUTER_MAX_TOKENS (e.g. in the profile's .env);
+# "0"/"off" restores the old behavior (no plugin-side cap).
+_DEFAULT_MAX_TOKENS = 65536
+_MAX_TOKENS_ENV = "EUROUTER_MAX_TOKENS"
+_AUX_MODULE = "agent.auxiliary_client"
+
+
+def _configured_max_tokens() -> int | None:
+    """Default output cap: EUROUTER_MAX_TOKENS if set, else _DEFAULT_MAX_TOKENS;
+    None when explicitly disabled."""
+    raw = os.environ.get(_MAX_TOKENS_ENV, "").strip()
+    if not raw:
+        return _DEFAULT_MAX_TOKENS
+    if raw.lower() in ("0", "off", "none", "false", "disabled"):
+        return None
+    try:
+        value = int(raw)
+        if value > 0:
+            return value
+    except ValueError:
+        pass
+    _log_issue(f"{_MAX_TOKENS_ENV}={raw!r} is not a positive integer; using {_DEFAULT_MAX_TOKENS}")
+    return _DEFAULT_MAX_TOKENS
+
+
+def _aux_caller_max_tokens() -> tuple[bool, int | None]:
+    """``(on_aux_path, caller_max_tokens)`` for the build_api_kwargs_extras call
+    in progress. The aux path is recognized by its DIRECT caller living in
+    agent.auxiliary_client; the main transport path returns (False, None) so
+    its own max_tokens handling (caller/config value, then get_max_tokens)
+    stays untouched. Never raises."""
+    frame = inspect.currentframe()
+    try:
+        # [0] this helper, [1] build_api_kwargs_extras, [2] its caller.
+        caller = frame.f_back.f_back if frame else None
+        if caller is None or caller.f_globals.get("__name__") != _AUX_MODULE:
+            return False, None
+        f = caller
+        for _ in range(4):
+            if f is None or f.f_globals.get("__name__") != _AUX_MODULE:
+                break
+            if "max_tokens" in f.f_code.co_varnames:
+                value = f.f_locals.get("max_tokens")
+                return True, value if isinstance(value, int) and value > 0 else None
+            f = f.f_back
+        _log_issue("aux path: caller max_tokens not found in agent.auxiliary_client frames; using default cap")
+        return True, None
+    except Exception as exc:
+        # Path unknown: never risk overriding a main-loop caller/config value.
+        _log_issue(f"aux max_tokens lookup failed ({type(exc).__name__}: {exc}); no plugin-side cap on this call")
+        return False, None
+    finally:
+        del frame
+
+
 class EuRouterProfile(ProviderProfile):
     """EU Router aggregator — Routing-Rules picker + rule_id request rewrite.
 
@@ -303,6 +379,15 @@ class EuRouterProfile(ProviderProfile):
             _log_issue(f"fetch_models failed unexpectedly ({type(exc).__name__}: {exc}); serving last good route list")
         return list(_last_good_route_names) or None
 
+    def get_max_tokens(self, model: str | None = None, **context: Any) -> int | None:
+        """Main-loop default output cap (the transport only asks when neither
+        the caller nor the config set max_tokens). See "Output-token cap"."""
+        try:
+            return _configured_max_tokens()
+        except Exception as exc:
+            _log_issue(f"get_max_tokens failed unexpectedly ({type(exc).__name__}: {exc}); using {_DEFAULT_MAX_TOKENS}")
+            return _DEFAULT_MAX_TOKENS
+
     def build_extra_body(
         self, *, session_id: str | None = None, **context: Any
     ) -> dict[str, Any]:
@@ -346,9 +431,19 @@ class EuRouterProfile(ProviderProfile):
         ``rule_id`` → extra_body ONLY: openai-python's typed ``.create()``
         rejects unknown top-level kwargs ("unexpected keyword argument
         'rule_id'", live-verified 2026-08-07). Do not move it back.
+        ``max_tokens`` → top_level on the AUX path only (see "Output-token
+        cap" above); the main loop gets it via get_max_tokens().
         """
         extra_body: dict[str, Any] = {}
         top_level: dict[str, Any] = {}
+        try:
+            on_aux_path, caller_max_tokens = _aux_caller_max_tokens()
+            if on_aux_path:
+                cap = caller_max_tokens or _configured_max_tokens()
+                if cap:
+                    top_level["max_tokens"] = cap
+        except Exception as exc:
+            _log_issue(f"aux max_tokens cap failed unexpectedly ({type(exc).__name__}: {exc}); request goes out uncapped")
         try:
             if supports_reasoning:
                 if reasoning_config is not None:
