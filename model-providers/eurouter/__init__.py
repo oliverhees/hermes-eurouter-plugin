@@ -106,6 +106,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import inspect
 import json
 import logging
 import os
@@ -254,6 +255,153 @@ def _sync_provider_models_catalog(names: list[str]) -> None:
 _last_good_route_names: list[str] = []
 
 
+# ---------------------------------------------------------------------------
+# Output-token cap (Live-Befund 2026-09-25, Kanban t_fd3b89f0)
+# ---------------------------------------------------------------------------
+# A request WITHOUT max_tokens makes EU Router budget the model's full
+# max_completion_tokens as output. For routes landing on a 1M-window upstream
+# (deepseek-v4-flash-0731 advertises max_completion_tokens == context_length)
+# every such request 400s, even a 12-token prompt:
+#   "Estimated total tokens (1048589) exceeds model context window (1048576).
+#    Reduce message length or max_tokens."
+# Hermes omits max_tokens on this provider in two places:
+#   1. Main agent loop: sends the caller/config value, else the profile's
+#      get_max_tokens() — official hook, overridden below.
+#   2. Auxiliary calls (goal judge, titles, compression, ...):
+#      agent/auxiliary_client.py::_forwards_max_tokens() is a hard-coded
+#      provider allow-list without eurouter, so even an explicit value (the
+#      goal judge's 4096) is dropped. The only plugin surface on that path is
+#      build_api_kwargs_extras()'s top_level dict (merged AFTER that check),
+#      which is not handed the caller's value — _aux_caller_max_tokens()
+#      recovers it read-only from the calling frame (private internal,
+#      fail-soft: default cap when it can't be found).
+# The cap must also stay under the UPSTREAM's own output limit, which varies
+# per upstream behind one route (live 2026-09-25: 64000 for a
+# deepseek-v4-flash upstream, 16000 for a glm-5.2 one) and is not published.
+# Exceeding it 400s with "max_tokens (65536) exceeds model limit (64000).";
+# Hermes' output-cap parser doesn't know that wording, treats it as context
+# overflow and gives up. So classify_api_error (official profile hook) turns
+# it into a plain retry and remembers the limit per model; the retry's
+# rebuilt request then asks get_max_tokens() again and gets the learned
+# limit. Learned limits persist in $HERMES_HOME/cache/ because every kanban
+# worker is a fresh process — delete the file to forget them.
+# Override the default with EUROUTER_MAX_TOKENS (e.g. in the profile's .env);
+# "0"/"off" restores the old behavior (no plugin-side cap).
+_DEFAULT_MAX_TOKENS = 32768
+_MAX_TOKENS_ENV = "EUROUTER_MAX_TOKENS"
+_AUX_MODULE = "agent.auxiliary_client"
+_LIMITS_FILE = _hermes_home() / "cache" / "eurouter-output-limits.json"
+_OUTPUT_LIMIT_RE = re.compile(r"max_tokens\s*\(\s*(\d+)\s*\)\s*exceeds model limit\s*\(\s*(\d+)\s*\)", re.IGNORECASE)
+
+# {model as Hermes sends it (route slug): lowest upstream output limit seen}
+_learned_limits: dict[str, int] | None = None
+
+
+def _load_learned_limits() -> dict[str, int]:
+    global _learned_limits
+    if _learned_limits is None:
+        _learned_limits = {}
+        try:
+            data = json.loads(_LIMITS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                _learned_limits = {str(k): int(v) for k, v in data.items() if int(v) > 0}
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            _log_issue(f"learned output limits unreadable ({type(exc).__name__}: {exc}); starting empty")
+    return _learned_limits
+
+
+def _remember_output_limit(model: str, limit: int) -> None:
+    limits = _load_learned_limits()
+    if limits.get(model, limit + 1) <= limit:
+        return
+    limits[model] = limit
+    _log_issue(f"learned upstream output limit {limit} for model '{model}'; capping max_tokens there")
+    try:
+        _LIMITS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _LIMITS_FILE.with_name(f"{_LIMITS_FILE.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(limits, indent=1, sort_keys=True), encoding="utf-8")
+        os.replace(tmp, _LIMITS_FILE)
+    except Exception as exc:
+        _log_issue(f"could not persist learned output limits ({type(exc).__name__}: {exc}); kept in memory")
+
+
+def _capped(cap: int | None, model: str | None) -> int | None:
+    """*cap* lowered to the learned upstream limit of *model*, if any."""
+    if not cap or not model:
+        return cap
+    learned = _load_learned_limits().get(model)
+    return min(cap, learned) if learned else cap
+
+
+def _classify_api_error(error: Any = None, *, message: str | None = None, model: str | None = None,
+                        **context: Any) -> dict[str, Any] | None:
+    """ProviderProfile.classify_api_error: "max_tokens (X) exceeds model limit (Y)"
+    → remember Y for *model* and retry (the rebuilt request is capped at Y).
+    Everything else → None (Hermes' built-in classification)."""
+    try:
+        match = _OUTPUT_LIMIT_RE.search(" ".join(str(part) for part in (message, error) if part))
+        if not match or not model:
+            return None
+        requested, limit = int(match.group(1)), int(match.group(2))
+        if not 0 < limit < requested:
+            return None
+        _remember_output_limit(model, limit)
+        return {"reason": "unknown", "retryable": True, "should_compress": False, "should_fallback": False}
+    except Exception as exc:
+        _log_issue(f"classify_api_error failed unexpectedly ({type(exc).__name__}: {exc}); built-in classification applies")
+        return None
+
+
+def _configured_max_tokens() -> int | None:
+    """Default output cap: EUROUTER_MAX_TOKENS if set, else _DEFAULT_MAX_TOKENS;
+    None when explicitly disabled."""
+    raw = os.environ.get(_MAX_TOKENS_ENV, "").strip()
+    if not raw:
+        return _DEFAULT_MAX_TOKENS
+    if raw.lower() in ("0", "off", "none", "false", "disabled"):
+        return None
+    try:
+        value = int(raw)
+        if value > 0:
+            return value
+    except ValueError:
+        pass
+    _log_issue(f"{_MAX_TOKENS_ENV}={raw!r} is not a positive integer; using {_DEFAULT_MAX_TOKENS}")
+    return _DEFAULT_MAX_TOKENS
+
+
+def _aux_caller_max_tokens() -> tuple[bool, int | None]:
+    """``(on_aux_path, caller_max_tokens)`` for the build_api_kwargs_extras call
+    in progress. The aux path is recognized by its DIRECT caller living in
+    agent.auxiliary_client; the main transport path returns (False, None) so
+    its own max_tokens handling (caller/config value, then get_max_tokens)
+    stays untouched. Never raises."""
+    frame = inspect.currentframe()
+    try:
+        # [0] this helper, [1] build_api_kwargs_extras, [2] its caller.
+        caller = frame.f_back.f_back if frame else None
+        if caller is None or caller.f_globals.get("__name__") != _AUX_MODULE:
+            return False, None
+        f = caller
+        for _ in range(4):
+            if f is None or f.f_globals.get("__name__") != _AUX_MODULE:
+                break
+            if "max_tokens" in f.f_code.co_varnames:
+                value = f.f_locals.get("max_tokens")
+                return True, value if isinstance(value, int) and value > 0 else None
+            f = f.f_back
+        _log_issue("aux path: caller max_tokens not found in agent.auxiliary_client frames; using default cap")
+        return True, None
+    except Exception as exc:
+        # Path unknown: never risk overriding a main-loop caller/config value.
+        _log_issue(f"aux max_tokens lookup failed ({type(exc).__name__}: {exc}); no plugin-side cap on this call")
+        return False, None
+    finally:
+        del frame
+
+
 class EuRouterProfile(ProviderProfile):
     """EU Router aggregator — Routing-Rules picker + rule_id request rewrite.
 
@@ -303,6 +451,15 @@ class EuRouterProfile(ProviderProfile):
             _log_issue(f"fetch_models failed unexpectedly ({type(exc).__name__}: {exc}); serving last good route list")
         return list(_last_good_route_names) or None
 
+    def get_max_tokens(self, model: str | None = None, **context: Any) -> int | None:
+        """Main-loop default output cap (the transport only asks when neither
+        the caller nor the config set max_tokens). See "Output-token cap"."""
+        try:
+            return _capped(_configured_max_tokens(), model)
+        except Exception as exc:
+            _log_issue(f"get_max_tokens failed unexpectedly ({type(exc).__name__}: {exc}); using {_DEFAULT_MAX_TOKENS}")
+            return _DEFAULT_MAX_TOKENS
+
     def build_extra_body(
         self, *, session_id: str | None = None, **context: Any
     ) -> dict[str, Any]:
@@ -346,9 +503,19 @@ class EuRouterProfile(ProviderProfile):
         ``rule_id`` → extra_body ONLY: openai-python's typed ``.create()``
         rejects unknown top-level kwargs ("unexpected keyword argument
         'rule_id'", live-verified 2026-08-07). Do not move it back.
+        ``max_tokens`` → top_level on the AUX path only (see "Output-token
+        cap" above); the main loop gets it via get_max_tokens().
         """
         extra_body: dict[str, Any] = {}
         top_level: dict[str, Any] = {}
+        try:
+            on_aux_path, caller_max_tokens = _aux_caller_max_tokens()
+            if on_aux_path:
+                cap = _capped(caller_max_tokens or _configured_max_tokens(), model)
+                if cap:
+                    top_level["max_tokens"] = cap
+        except Exception as exc:
+            _log_issue(f"aux max_tokens cap failed unexpectedly ({type(exc).__name__}: {exc}); request goes out uncapped")
         try:
             if supports_reasoning:
                 if reasoning_config is not None:
@@ -414,6 +581,9 @@ _PROFILE_KWARGS: dict[str, Any] = {
     # 400-error bug fetch_models() exists to fix). fetch_models() already
     # handles the no-rules case by falling back to the generic catalog.
     "fallback_models": (),
+    # A dataclass FIELD upstream (not a method): must be passed here, a
+    # subclass method would be shadowed by the field's None default.
+    "classify_api_error": _classify_api_error,
 }
 
 

@@ -64,6 +64,23 @@ Hinweis: Der Shim greift bei Terminal-Starts (`hermes`, `hermes desktop`,
 `hermes update`). Startest du die Desktop-App direkt über das App-Icon,
 läuft er nicht — das Plugin selbst funktioniert davon unabhängig.
 
+## Konfiguration: Output-Limit (`EUROUTER_MAX_TOKENS`)
+
+Ohne `max_tokens` reserviert EU Router das volle Modell-Output-Budget; bei
+Routen auf 1M-Kontext-Upstreams endet das mit HTTP 400 "Estimated total
+tokens (…) exceeds model context window". Das Plugin setzt deshalb bei
+jedem Request ein Limit: einen vom Aufrufer gesetzten Wert (z.B. 4096 des
+Goal-Judges, `model.max_tokens`, `auxiliary.<task>.max_tokens`), sonst
+den Default 32768. Überschreiben per `EUROUTER_MAX_TOKENS=<zahl>` in
+`~/.hermes/.env` (bzw. der `.env` des Profils); `EUROUTER_MAX_TOKENS=off`
+schaltet das Plugin-Limit ab.
+
+Einzelne Upstreams hinter einer Route haben niedrigere Output-Limits
+(beobachtet: 64000, 16000). Meldet EU Router "max_tokens (X) exceeds model
+limit (Y)", merkt sich das Plugin Y pro Modell, lässt Hermes den Request
+wiederholen und begrenzt ab dann auf Y. Gespeichert in
+`~/.hermes/cache/eurouter-output-limits.json` — Datei löschen setzt das zurück.
+
 ## Troubleshooting
 
 | Symptom | Erste Anlaufstelle |
@@ -72,6 +89,7 @@ läuft er nicht — das Plugin selbst funktioniert davon unabhängig.
 | Routen fehlen im Picker | Im Picker "Refresh Models" klicken (1h-Cache), API-Key prüfen, Regeln im EU-Router-Account aktiviert? |
 | "Model switch failed" | Hermes neu starten (Plugin-Code wird nur beim Start geladen), dann Log prüfen |
 | Fix wirkt "wie nicht passiert" | `install.sh` erneut ausführen — es leert den Disk-Cache der Modell-Listen |
+| HTTP 400 "Estimated total tokens … exceeds model context window" | Plugin ≥ 2.2.0 installiert? `EUROUTER_MAX_TOKENS` zu hoch gesetzt? |
 
 Alle Degradationen schreibt das Plugin mit Zeitstempel und exakter Ursache
 nach `~/.hermes/logs/eurouter-plugin.log`. Bitte diese Zeilen bei
