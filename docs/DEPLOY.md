@@ -19,10 +19,18 @@ cd hermes-eurouter-plugin
 ./install.sh
 ```
 
-Hinweis für Fortgeschrittene: `hermes plugins install` (der offizielle
-Plugin-Befehl) legt Model-Provider-Plugins aktuell an einen Ort, den Hermes'
-Provider-Discovery nicht scannt — deshalb dieser Installer. Sobald Upstream
-das unterstützt, stellen wir um.
+Hinweis für Fortgeschrittene: Model-Provider-Plugins wie dieses sind in
+Hermes ein bewusst eigenständiges System, getrennt vom allgemeinen
+Plugin-Manager und von der Oberfläche unter Settings → Plugins in Hermes
+Desktop. Live gegen den Hermes-Quellcode geprüft (2026-09-27,
+`hermes_cli/plugins.py`, `apps/desktop/src/store/agent-plugins.ts`): der
+allgemeine Plugin-Manager überspringt `kind: model-provider`-Manifeste
+explizit, und die Desktop-Oberfläche blendet alles unter `model-providers/`
+bewusst aus. Das ist kein Zwischenzustand, der irgendwann verschwindet —
+Model-Provider-Plugins erscheinen dort planmäßig nie. Dieses Plugin folgt
+deshalb weiterhin dem offiziellen, dokumentierten Weg für Model-Provider-
+Plugins (`$HERMES_HOME/plugins/model-providers/eurouter/`), verteilt über
+den eigenen Installer statt über `hermes plugins install`.
 
 Danach `EUROUTER_API_KEY=eur_...` in `~/.hermes/.env` eintragen und Hermes
 komplett neu starten. Der Provider "EU Router" erscheint im Modell-Picker,

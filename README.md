@@ -131,6 +131,8 @@ Funktioniert und live verifiziert:
 
 Offen: Der Healthcheck-Shim greift nur bei Starts über den `hermes`-Befehl im Terminal (die Desktop-App spawnt ihr Backend direkt). Da die Robustheit im Plugin selbst steckt, ist das in der Praxis unkritisch; eine tiefere Integration ist angedacht.
 
+Geprüft (2026-09-27): Dieses Plugin ist konform zum aktuellen, dokumentierten Model-Provider-Plugin-Vertrag (Manifest-Form, `ProviderProfile`-Felder, alle drei Hooks) und live gegen den aktuellen Stand von `NousResearch/hermes-agent@main` auf Feldkompatibilität geprüft. Es erscheint bewusst **nicht** unter Settings → Plugins in Hermes Desktop — das ist kein fehlendes Feature, sondern gewolltes Hermes-Design für diese Plugin-Art (Details in [docs/DEPLOY.md](docs/DEPLOY.md)). Änderungshistorie: [CHANGELOG.md](CHANGELOG.md).
+
 ---
 
 ## 🌍 Das AIIANER-Universum
